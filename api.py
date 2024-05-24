@@ -41,9 +41,24 @@ def get_movies_by_actor(id):
     ON actor.actor_id = film_actor.actor_id
     INNER JOIN film
     ON film_actor.film_id = film.film_id
-    WHERE actor.actor_id = 2
+    WHERE actor.actor_id = {}
     """.format(id))
     return make_response(jsonify({"actor_id":id, "count": len(data), "movies": data}), 200)
+
+@app.route("/actors", methods=["POST"])
+def add_actor():
+    cur = mysql.connection.cursor()
+    info = request.get_json()
+    first_name = info["first_name"]
+    last_name = info["last_name"]
+    cur.execute(
+            """ INSERT INTO ACTOR (first_name, last_name) VALUE (%s, %s)""", (first_name, last_name),
+    )
+    mysql.connection.commit()
+    print("row(s) affected {}".format(cur.rowcount))
+    rows_affected = cur.rowcount
+    cur.close
+    return make_response( jsonify({"message": "actor added successfully", "rows_affected": rows_affected}), 201)
 
 if __name__ == "__main__":
     app.run(debug=True)
