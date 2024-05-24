@@ -60,6 +60,21 @@ def add_actor():
     cur.close
     return make_response( jsonify({"message": "actor added successfully", "rows_affected": rows_affected}), 201)
 
+@app.route("/actors/<int:id>", methods=["PUT"])
+def update_actor(id):
+    cur = mysql.connection.cursor()
+    info = request.get_json()
+    first_name = info["first_name"]
+    last_name = info["last_name"]
+    cur.execute("""
+        UPDATE actor SET first_name = %s, last_name = %s WHERE actor_id = %s
+    """, (first_name, last_name, id),
+    )
+    mysql.connection.commit()
+    rows_affected = cur.rowcount
+    cur.close()
+    return make_response( jsonify({"message": "actor updated successfully", "rows_affected": rows_affected}), 201)
+
 if __name__ == "__main__":
     app.run(debug=True)
 
