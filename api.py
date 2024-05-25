@@ -7,7 +7,6 @@ app.config['MYSQL_HOST'] = "localhost"
 app.config['MYSQL_USER'] = "root"
 app.config['MYSQL_PASSWORD'] = "admin"
 app.config['MYSQL_DB'] = "sakila"
-
 app.config["MYSQL_CURSORCLASS"] = "DictCursor"
 
 mysql = MySQL(app)
@@ -59,6 +58,21 @@ def delete_actor(id):
     cur.execute(""" DELETE FROM actor where actor_id = %s """,(id,))
     mysql.connection.commit()
     cur.close()
+    return redirect(url_for("index"))
+
+@app.route("/search", methods=["GET", "POST"])
+def search():
+    if request.method == "POST":
+        search_term = request.form["search_term"]
+        query = """
+            SELECT * FROM actor WHERE first_name LIKE %s OR last_name LIKE %s
+        """
+        like_term = f"%{search_term}%"
+        cur = mysql.connection.cursor()
+        cur.execute(query, (like_term, like_term))
+        actors = cur.fetchall()
+        cur.close()
+        return render_template("index.html", actors=actors)
     return redirect(url_for("index"))
 
 if __name__ == "__main__":

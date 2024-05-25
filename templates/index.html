@@ -2,22 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List of Actors</title>
+    <title>Actors</title>
 </head>
 <body>
-    <h1>List of Actors</h1>
+    <h1>Actors</h1>
+
+    <form method="POST" action="{{ url_for('search') }}">
+        <input type="text" name="search_term" placeholder="Search by name">
+        <input type="submit" value="Search">
+    </form>
+
     <ul>
-        {% for actor in actors %}
-            <li>{{ actor.first_name }} {{ actor.last_name }} (ID: {{ actor.actor_id }})</li>
-        {% endfor %}
+    {% for actor in actors %}
+        <li>ID: {{ actor.actor_id }} - {{ actor.first_name }} {{ actor.last_name }}</li>
+    {% endfor %}
     </ul>
-    <h2>Add New Actor</h2>
-    <form action="/add" method="POST">
-        <label for="first_name">First Name:</label>
-        <input type="text" id="first_name" name="first_name" required><br><br>
-        <label for="last_name">Last Name:</label>
-        <input type="text" id="last_name" name="last_name" required><br><br>
+
+    <h2>Add a New Actor</h2>
+    <form method="POST" action="{{ url_for('add_actor') }}">
+        <input type="text" name="first_name" placeholder="First Name">
+        <input type="text" name="last_name" placeholder="Last Name">
         <input type="submit" value="Add Actor">
     </form>
 </body>
