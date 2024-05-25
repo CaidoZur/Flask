@@ -1,4 +1,4 @@
-from flask import Flask, make_response, jsonify, request
+from flask import Flask, render_template, redirect, url_for, request
 from flask_mysqldb import MySQL
 
 app = Flask(__name__)
@@ -11,79 +11,55 @@ app.config['MYSQL_DB'] = "sakila"
 app.config["MYSQL_CURSORCLASS"] = "DictCursor"
 
 mysql = MySQL(app)
+
 @app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
-
-def data_fetch(query):
+def index():
     cur = mysql.connection.cursor()
-    cur.execute(query)
-    data = cur.fetchall()
+    cur.execute("SELECT * FROM actor")
+    actors = cur.fetchall()
     cur.close()
-    return data
+    return render_template("index.html", actors=actors)
 
-@app.route("/actors", methods=["GET"])
-def get_actors():
-    data = data_fetch("""select * from actor""")
-    return make_response(jsonify(data), 200)
-
-@app.route("/actors/<int:id>", methods=["GET"])
-def get_actor_by_id(id):
-    data = data_fetch("""SELECT * FROM actor where actor_id = {}""".format(id))
-    return make_response(jsonify(data), 200)
-
-@app.route("/actors/<int:id>/movies", methods=["GET"])
-def get_movies_by_actor(id):
-    data = data_fetch("""
-    SELECT film.title, film.release_year
-    FROM actor
-    INNER JOIN film_actor
-    ON actor.actor_id = film_actor.actor_id
-    INNER JOIN film
-    ON film_actor.film_id = film.film_id
-    WHERE actor.actor_id = {}
-    """.format(id))
-    return make_response(jsonify({"actor_id":id, "count": len(data), "movies": data}), 200)
-
-@app.route("/actors", methods=["POST"])
+@app.route("/add", methods=["POST"])
 def add_actor():
-    cur = mysql.connection.cursor()
-    info = request.get_json()
-    first_name = info["first_name"]
-    last_name = info["last_name"]
-    cur.execute(
-            """ INSERT INTO ACTOR (first_name, last_name) VALUE (%s, %s)""", (first_name, last_name),
-    )
-    mysql.connection.commit()
-    print("row(s) affected {}".format(cur.rowcount))
-    rows_affected = cur.rowcount
-    cur.close
-    return make_response( jsonify({"message": "actor added successfully", "rows_affected": rows_affected}), 201)
+    if request.method == "POST":
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        cur = mysql.connection.cursor()
+        cur.execute(
+                """ INSERT INTO actor (first_name, last_name) VALUES (%s, %s)""", (first_name, last_name),
+        )
+        mysql.connection.commit()
+        cur.close()
+    return redirect(url_for("index"))
 
-@app.route("/actors/<int:id>", methods=["PUT"])
+@app.route("/actors/<int:id>", methods=["GET", "POST"])
 def update_actor(id):
-    cur = mysql.connection.cursor()
-    info = request.get_json()
-    first_name = info["first_name"]
-    last_name = info["last_name"]
-    cur.execute("""
-        UPDATE actor SET first_name = %s, last_name = %s WHERE actor_id = %s
-    """, (first_name, last_name, id),
-    )
-    mysql.connection.commit()
-    rows_affected = cur.rowcount
-    cur.close()
-    return make_response( jsonify({"message": "actor updated successfully", "rows_affected": rows_affected}), 201)
+    if request.method == "GET":
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM actor WHERE actor_id = %s", (id,))
+        actor = cur.fetchone()
+        cur.close()
+        return render_template("update.html", actor=actor)
+    elif request.method == "POST":
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            UPDATE actor SET first_name = %s, last_name = %s WHERE actor_id = %s
+        """, (first_name, last_name, id),
+        )
+        mysql.connection.commit()
+        cur.close()
+        return redirect(url_for("index"))
 
-@app.route("/actors/<int:id>", methods=["DELETE"])
+@app.route("/delete/<int:id>", methods=["GET"])
 def delete_actor(id):
     cur = mysql.connection.cursor()
     cur.execute(""" DELETE FROM actor where actor_id = %s """,(id,))
     mysql.connection.commit()
-    rows_affected = cur.rowcount
     cur.close()
-    return make_response( jsonify({"message": "actor deleted successfully", "rows_affected": rows_affected}), 200)
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run(debug=True)
-
